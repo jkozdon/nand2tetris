@@ -1,0 +1,10 @@
+CHIP AllZero {
+    IN in[16];
+    OUT out;
+
+    PARTS:
+    Or8Way (in=in[0..7], out=o0);
+    Or8Way (in=in[8..15], out=o1);
+    Or (a=o0, b=o1, out=o2);
+    Nand (a=o2, b=true, out=out);
+}
