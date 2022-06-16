@@ -16,5 +16,19 @@ CHIP PC {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    // Set load bit for register
+    Or (a=reset, b=load, out=do0);
+    Or (a=do0, b=inc, out=do);
+
+    // incremenent current value by one
+    Inc16 (in=curout, out=doinc);
+
+    // Select whether input or increment
+    Mux16 (a=doinc, b=in, sel=load, out=doincload);
+
+    // Select whether zero or previous
+    Mux16 (a=doincload, b=false, sel=reset, out=doincloadreset);
+
+    // update register
+    Register (in=doincloadreset, load=do, out=out, out=curout);
 }
