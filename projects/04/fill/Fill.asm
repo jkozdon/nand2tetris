@@ -6,9 +6,54 @@
 // Runs an infinite loop that listens to the keyboard input.
 // When a key is pressed (any key), the program blackens the screen,
 // i.e. writes "black" in every pixel;
-// the screen should remain fully black as long as the key is pressed. 
+// the screen should remain fully black as long as the key is pressed.
 // When no key is pressed, the program clears the screen, i.e. writes
 // "white" in every pixel;
 // the screen should remain fully clear as long as no key is pressed.
 
-// Put your code here.
+
+(KBD_LOOP)
+    // Assume color is white
+    @color
+    M=0
+    // If kbd not pressed set color to white
+    @KBD
+    D=M
+    @COLOR
+    D;JEQ
+    // keyboard is pressed, set color to black
+    @color
+    M=-1
+    @COLOR
+    0;JMP
+
+(COLOR)
+   // Number of 16 bit registers to set
+   @8192
+   D=A
+   @i
+   M=D
+   // Loop back through until i < 0
+(COLOR_LOOP)
+   // The address we are working with is SCREEN - i
+   @SCREEN
+   D=A
+   @i
+   M=M-1 // start by decreasing i
+   D=D+M // address we are working with
+   @addr
+   M=D   // store so we can get the color
+   // Get the color we are setting
+   @color
+   D=M
+   // Get the address we are setting
+   @addr
+   A=M
+   M=D // set the color
+   // check if i == 9
+   @i
+   D=M
+   @KBD_LOOP
+   D;JEQ
+   @COLOR_LOOP
+   D;JMP
