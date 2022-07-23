@@ -27,5 +27,30 @@ CHIP Memory {
     OUT out[16];
 
     PARTS:
-    // Put your code here:
+    // RAM
+    Nand(a=address[14], b=address[14], out=doram);
+    And(a = load, b = doram, out = loadram);
+    RAM16K(in = in, address = address[0..13], load = loadram, out = outram);
+
+    // Keyboard
+    Or8Way(in=address[0..7], out=o0);
+    Or8Way(in=address[5..12], out=o1);
+    Nand(a = address[13], b = true, out = o2);
+    Nand(a = address[14], b = true, out = o3);
+    Or(a = o0, b = o1, out = o10);
+    Or(a = o2, b = o3, out = o11);
+    Or(a = o10, b = o11, out = notdokey);
+    Not(in = notdokey, out = dokey);
+    Keyboard( out = outkey);
+
+    // Screen
+    Or( a = dokey, b = doram, out = notdoscreen);
+    Not( in = notdoscreen, out = doscreen);
+    And( a = load, b = doscreen, out = loadscreen);
+    Screen(in = in, load = loadscreen, address = address[0..12], out = outscreen);
+
+    // Determine which we really should have done
+    Mux16( a = outscreen, b = outram, sel = doram, out = outramscreen);
+    Mux16( a = outramscreen, b = outkey, sel = dokey, out = out);
+
 }
