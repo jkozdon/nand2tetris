@@ -48,7 +48,7 @@ CHIP CPU {
 
     // ainstr || d1 -> aload
     Or(a=ainstr, b=instruction[5], out=aload);
-    Register(in=aregin, load=aload, out=areg, out[0..14]=addressM);
+    ARegister(in=aregin, load=aload, out=areg, out[0..14]=addressM);
 
     // d2 -> dload
     And(a=instruction[4], b=instruction[15], out=dload);
