@@ -39,5 +39,51 @@ CHIP CPU {
         pc[15];          // address of next instruction
 
     PARTS:
-    // Put your code here:
+
+    Not(in=instruction[15], out=ainstr);
+    Mux16(a = aluout, b = instruction, sel=ainstr, out=aregin);
+
+    // 15 14 13 12   11 10 09 08   07 06 05 04   03 02 01 00
+    //  1  1  1  a _ c1 c2 c3 c4 _ c5 c6 d1 d2 _ d3 j1 j2 j3
+
+    // ainstr || d1 -> aload
+    Or(a=ainstr, b=instruction[5], out=aload);
+    Register(in=aregin, load=aload, out=areg, out[0..14]=addressM);
+
+    // d2 -> dload
+    And(a=instruction[4], b=instruction[15], out=dload);
+    DRegister(in=aluout, load=dload, out=dreg);
+
+    // Alu input -> a -> areg
+    Mux16(a = areg, b=inM, sel=instruction[12], out=aluin);
+
+    ALU(x = dreg, y = aluin, out = outM, out = aluout,
+    zx = instruction[11],
+    nx = instruction[10],
+    zy = instruction[9],
+    ny = instruction[8],
+    f  = instruction[7],
+    no = instruction[6],
+    zr = zr,
+    ng = ng);
+
+    // out < 0
+    And(a=instruction[2], b=ng, out=jmp1);
+    // out = 0
+    And(a=instruction[1], b=zr, out=jmp2);
+    // out > 0  <- not(ng || zr)
+    Or(a=zr, b=ng, out=nge);
+    Not(in=nge, out=ps);
+    And(a=instruction[0], b=ps, out=jmp3);
+    // jmp
+    Or(a = jmp1, b = jmp2, out = jmp12);
+    Or(a = jmp12, b = jmp3, out = jmp123);
+    And(a=jmp123, b=instruction[15], out=jmp);
+
+    // Do program counter
+    PC(in=areg, load=jmp, inc=true, reset=reset, out[0..14] = pc);
+
+    // Set memory if not A instruction and d3
+    And(a=instruction[3], b=instruction[15], out=writeM);
+
 }
