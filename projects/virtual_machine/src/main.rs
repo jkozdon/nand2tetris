@@ -19,6 +19,28 @@ fn op_push(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Erro
             writeln!(output, "@{file}.{num}")?;
             writeln!(output, "    D=M")?;
         }
+        Some("pointer") => {
+            if num == 0 {
+                writeln!(output, "@THIS")?;
+            } else {
+                writeln!(output, "@THAT")?;
+            }
+            writeln!(output, "    D=M")?;
+        }
+        Some("this") => {
+            writeln!(output, "@THIS")?;
+            for _ in 0..num {
+                writeln!(output, "    A=A+1")?;
+            }
+            writeln!(output, "    D=M")?;
+        }
+        Some("that") => {
+            writeln!(output, "@THAT")?;
+            for _ in 0..num {
+                writeln!(output, "    A=A+1")?;
+            }
+            writeln!(output, "    D=M")?;
+        }
         Some(v) => println!("push: {v}"),
         _ => println!("{line}"),
     };
@@ -43,6 +65,27 @@ fn op_pop(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Error
     match line.split(" ").nth(1) {
         Some("static") => {
             writeln!(output, "@{file}.{num}")?;
+        }
+        Some("pointer") => {
+            if num == 0 {
+                writeln!(output, "@THIS")?;
+            } else {
+                writeln!(output, "@THAT")?;
+            }
+        }
+        Some("this") => {
+            writeln!(output, "@THIS")?;
+            writeln!(output, "    A=M")?;
+            for _ in 0..num {
+                writeln!(output, "    A=A+1")?;
+            }
+        }
+        Some("that") => {
+            writeln!(output, "@THAT")?;
+            writeln!(output, "    A=M")?;
+            for _ in 0..num {
+                writeln!(output, "    A=A+1")?;
+            }
         }
         Some(v) => println!("pop: {v}"),
         _ => println!("{line}"),
