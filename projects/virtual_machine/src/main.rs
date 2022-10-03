@@ -5,90 +5,115 @@ use std::io;
 use std::io::Write;
 use std::path::Path;
 
-fn op_push(line: &str, output_file: &mut fs::File) -> Result<(), io::Error> {
-    writeln!(output_file, "// {line}")?;
+fn op_push(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Error> {
+    writeln!(output, "// {line}")?;
+
+    let num = line.split(" ").nth(2).expect("num");
+    let num: i32 = num.trim().parse().expect("Wanted a number");
     match line.split(" ").nth(1) {
-        Some("constant") => (),
+        Some("constant") => {
+            writeln!(output, "@{num}")?;
+            writeln!(output, "    D=A")?;
+        }
+        Some("static") => {
+            writeln!(output, "@{file}.{num}")?;
+            writeln!(output, "    D=M")?;
+        }
         Some(v) => println!("push: {v}"),
         _ => println!("{line}"),
     };
 
-    match line.split(" ").nth(2) {
-        Some(v) => writeln!(output_file, "@{v}")?,
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    A=M")?;
+    writeln!(output, "    M=D")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    M=M+1")?;
+    return Ok(());
+}
+
+fn op_pop(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Error> {
+    writeln!(output, "// {line}")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    M=M-1")?;
+    writeln!(output, "    A=M")?;
+    writeln!(output, "    D=M")?;
+
+    let num = line.split(" ").nth(2).expect("num");
+    let num: i32 = num.trim().parse().expect("Wanted a number");
+    match line.split(" ").nth(1) {
+        Some("static") => {
+            writeln!(output, "@{file}.{num}")?;
+        }
+        Some(v) => println!("pop: {v}"),
         _ => println!("{line}"),
     };
+    writeln!(output, "    M=D")?;
 
-    writeln!(output_file, "    D=A")?;
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    A=M")?;
-    writeln!(output_file, "    M=D")?;
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    M=M+1")?;
     return Ok(());
 }
 
-fn bool_op(jump: &str, output_file: &mut fs::File, count: u32) -> Result<(), io::Error> {
-    writeln!(output_file, "    @JMP.{count}")?;
-    writeln!(output_file, "    D;{jump}")?;
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    A=M")?;
-    writeln!(output_file, "    M=0")?;
-    writeln!(output_file, "    @DONE.{count}")?;
-    writeln!(output_file, "    0;JMP")?;
-    writeln!(output_file, "(JMP.{count})")?;
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    A=M")?;
-    writeln!(output_file, "    M=-1")?;
-    writeln!(output_file, "(DONE.{count})")?;
+fn bool_op(jump: &str, output: &mut fs::File, count: u32) -> Result<(), io::Error> {
+    writeln!(output, "    @JMP.{count}")?;
+    writeln!(output, "    D;{jump}")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    A=M")?;
+    writeln!(output, "    M=0")?;
+    writeln!(output, "    @DONE.{count}")?;
+    writeln!(output, "    0;JMP")?;
+    writeln!(output, "(JMP.{count})")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    A=M")?;
+    writeln!(output, "    M=-1")?;
+    writeln!(output, "(DONE.{count})")?;
     return Ok(());
 }
 
-fn uni_op(line: &str, output_file: &mut fs::File) -> Result<(), io::Error> {
-    writeln!(output_file, "// {line}")?;
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    M=M-1")?;
-    writeln!(output_file, "    A=M")?;
+fn uni_op(line: &str, output: &mut fs::File) -> Result<(), io::Error> {
+    writeln!(output, "// {line}")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    M=M-1")?;
+    writeln!(output, "    A=M")?;
     match line.split(" ").nth(0) {
-        Some("neg") => writeln!(output_file, "    M=-M")?,
-        Some("not") => writeln!(output_file, "    M=!M")?,
+        Some("neg") => writeln!(output, "    M=-M")?,
+        Some("not") => writeln!(output, "    M=!M")?,
         _ => println!("uni_op: {line}"),
     }
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    M=M+1")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    M=M+1")?;
     return Ok(());
 }
 
-fn bin_op(line: &str, output_file: &mut fs::File, count: u32) -> Result<(), io::Error> {
-    writeln!(output_file, "// {line}")?;
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    M=M-1")?;
-    writeln!(output_file, "    A=M")?;
-    writeln!(output_file, "    D=M")?;
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    M=M-1")?;
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    A=M")?;
+fn bin_op(line: &str, output: &mut fs::File, count: u32) -> Result<(), io::Error> {
+    writeln!(output, "// {line}")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    M=M-1")?;
+    writeln!(output, "    A=M")?;
+    writeln!(output, "    D=M")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    M=M-1")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    A=M")?;
     match line.split(" ").nth(0) {
-        Some("add") => writeln!(output_file, "    M=M+D")?,
-        Some("sub") => writeln!(output_file, "    M=M-D")?,
-        Some("and") => writeln!(output_file, "    M=M&D")?,
-        Some("or") => writeln!(output_file, "    M=M|D")?,
+        Some("add") => writeln!(output, "    M=M+D")?,
+        Some("sub") => writeln!(output, "    M=M-D")?,
+        Some("and") => writeln!(output, "    M=M&D")?,
+        Some("or") => writeln!(output, "    M=M|D")?,
         Some("eq") => {
-            writeln!(output_file, "    D=M-D")?;
-            bool_op("JEQ", output_file, count)?;
+            writeln!(output, "    D=M-D")?;
+            bool_op("JEQ", output, count)?;
         }
         Some("lt") => {
-            writeln!(output_file, "    D=M-D")?;
-            bool_op("JLT", output_file, count)?;
+            writeln!(output, "    D=M-D")?;
+            bool_op("JLT", output, count)?;
         }
         Some("gt") => {
-            writeln!(output_file, "    D=M-D")?;
-            bool_op("JGT", output_file, count)?;
+            writeln!(output, "    D=M-D")?;
+            bool_op("JGT", output, count)?;
         }
         _ => println!("bin_op: {line}"),
     }
-    writeln!(output_file, "    @SP")?;
-    writeln!(output_file, "    M=M+1")?;
+    writeln!(output, "    @SP")?;
+    writeln!(output, "    M=M+1")?;
     return Ok(());
 }
 
@@ -102,9 +127,10 @@ fn main() -> std::io::Result<()> {
         .and_then(OsStr::to_str)
         .unwrap()
         .to_string();
+    let file = output.clone();
     output.push_str(".asm");
 
-    let mut output_file = fs::File::create(output)?;
+    let mut output = fs::File::create(output)?;
 
     let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
 
@@ -119,19 +145,20 @@ fn main() -> std::io::Result<()> {
         count = count + 1;
 
         match line.split(" ").nth(0) {
-            Some("push") => op_push(line, &mut output_file)?,
-            Some("add") => bin_op(line, &mut output_file, count)?,
-            Some("sub") => bin_op(line, &mut output_file, count)?,
-            Some("and") => bin_op(line, &mut output_file, count)?,
-            Some("or") => bin_op(line, &mut output_file, count)?,
-            Some("eq") => bin_op(line, &mut output_file, count)?,
-            Some("lt") => bin_op(line, &mut output_file, count)?,
-            Some("gt") => bin_op(line, &mut output_file, count)?,
-            Some("neg") => uni_op(line, &mut output_file)?,
-            Some("not") => uni_op(line, &mut output_file)?,
+            Some("push") => op_push(&file, line, &mut output)?,
+            Some("pop") => op_pop(&file, line, &mut output)?,
+            Some("add") => bin_op(line, &mut output, count)?,
+            Some("sub") => bin_op(line, &mut output, count)?,
+            Some("and") => bin_op(line, &mut output, count)?,
+            Some("or") => bin_op(line, &mut output, count)?,
+            Some("eq") => bin_op(line, &mut output, count)?,
+            Some("lt") => bin_op(line, &mut output, count)?,
+            Some("gt") => bin_op(line, &mut output, count)?,
+            Some("neg") => uni_op(line, &mut output)?,
+            Some("not") => uni_op(line, &mut output)?,
             _ => println!("op: {line}"),
         };
-        writeln!(output_file, "")?;
+        writeln!(output, "")?;
     }
 
     Ok(())
