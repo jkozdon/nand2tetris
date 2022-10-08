@@ -220,6 +220,8 @@ fn main() -> std::io::Result<()> {
 
     let file_path = &args[1];
 
+    let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
+
     let mut output: String = Path::new(file_path)
         .file_stem()
         .and_then(OsStr::to_str)
@@ -229,8 +231,6 @@ fn main() -> std::io::Result<()> {
     output.push_str(".asm");
 
     let mut output = fs::File::create(output)?;
-
-    let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
 
     let mut count = 0;
     for line in contents.lines() {
