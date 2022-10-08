@@ -11,14 +11,17 @@ fn op_push(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Erro
     let num = line.split(" ").nth(2).expect("num");
     let num: i32 = num.trim().parse().expect("Wanted a number");
     match line.split(" ").nth(1) {
+        // Constants put constant in D register
         Some("constant") => {
             writeln!(output, "@{num}")?;
             writeln!(output, "D=A")?;
         }
+        // static are labels
         Some("static") => {
             writeln!(output, "@{file}.{num}")?;
             writeln!(output, "D=M")?;
         }
+        // pointer push this/that
         Some("pointer") => {
             if num == 0 {
                 writeln!(output, "@THIS")?;
@@ -27,6 +30,7 @@ fn op_push(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Erro
             }
             writeln!(output, "D=M")?;
         }
+        // this/that/local/argument/tmp load base and add required amount
         Some("this") => {
             writeln!(output, "@THIS")?;
             writeln!(output, "A=M")?;
@@ -61,6 +65,7 @@ fn op_push(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Erro
         }
         Some("temp") => {
             writeln!(output, "@5")?;
+            // A already has correct base
             for _ in 0..num {
                 writeln!(output, "A=A+1")?;
             }
@@ -70,6 +75,7 @@ fn op_push(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Erro
         _ => println!("{line}"),
     };
 
+    // Grab stack pointer and push D then advance
     writeln!(output, "@SP")?;
     writeln!(output, "A=M")?;
     writeln!(output, "M=D")?;
@@ -88,9 +94,11 @@ fn op_pop(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Error
     let num = line.split(" ").nth(2).expect("num");
     let num: i32 = num.trim().parse().expect("Wanted a number");
     match line.split(" ").nth(1) {
+        // Set location to label
         Some("static") => {
             writeln!(output, "@{file}.{num}")?;
         }
+        // pointer is pop stack to this/stat
         Some("pointer") => {
             if num == 0 {
                 writeln!(output, "@THIS")?;
@@ -98,6 +106,7 @@ fn op_pop(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Error
                 writeln!(output, "@THAT")?;
             }
         }
+        // this/that/local/argument/tmp load base and add required amount
         Some("this") => {
             writeln!(output, "@THIS")?;
             writeln!(output, "A=M")?;
@@ -128,6 +137,7 @@ fn op_pop(file: &str, line: &str, output: &mut fs::File) -> Result<(), io::Error
         }
         Some("temp") => {
             writeln!(output, "@5")?;
+            // A already has correct base
             for _ in 0..num {
                 writeln!(output, "A=A+1")?;
             }
